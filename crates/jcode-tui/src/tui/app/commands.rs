@@ -1777,8 +1777,11 @@ pub(super) fn handle_session_command(app: &mut App, trimmed: &str) -> bool {
         return true;
     }
 
-    if trimmed == "/clear" {
+    if trimmed == "/new" || trimmed == "/clear" {
         reset_current_session(app);
+        if trimmed == "/new" {
+            app.set_status_notice("New session started");
+        }
         return true;
     }
 

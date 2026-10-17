@@ -1824,7 +1824,7 @@ pub(in crate::tui::app) async fn submit_remote_enter_input(
             return Ok(());
         }
 
-        if trimmed == "/clear" {
+        if trimmed == "/new" || trimmed == "/clear" {
             remote.clear().await?;
             app.clear_provider_messages();
             app.clear_display_messages();
@@ -1845,7 +1845,11 @@ pub(in crate::tui::app) async fn submit_remote_enter_input(
             super::super::commands_review::clear_side_panel_for_new_session(app);
             app.is_processing = false;
             app.status = ProcessingStatus::Idle;
-            app.set_status_notice("Session cleared");
+            app.set_status_notice(if trimmed == "/new" {
+                "New session started"
+            } else {
+                "Session cleared"
+            });
             return Ok(());
         }
 

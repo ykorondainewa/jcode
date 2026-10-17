@@ -19,6 +19,9 @@ impl App {
             "rewind" => {
                 "/rewind\nShow numbered conversation history.\n\n/rewind N\nRewind to message N (drops everything after it and resets provider session).\n\n/rewind undo\nUndo the most recent rewind and restore the removed messages."
             }
+            "new" => {
+                "/new\nStart a fresh session, clearing the current conversation, queue, and display. The previous session remains saved and can be reopened with /resume."
+            }
             "clear" => {
                 "/clear\nClear current conversation, queue, and display; starts a fresh session."
             }

@@ -1804,6 +1804,81 @@ fn assert_clear_image_reset(app: &App, previous_version: u64) {
 }
 
 #[test]
+fn slash_new_starts_fresh_session_and_preserves_previous_session() {
+    let mut app = create_test_app();
+    app.session.add_message(
+        crate::message::Role::User,
+        vec![crate::message::ContentBlock::Text {
+            text: "Keep this conversation for resume".to_string(),
+            cache_control: None,
+        }],
+    );
+    let previous_id = app.session.id.clone();
+    seed_stale_clear_usage(&mut app);
+    seed_stale_clear_swarm_plan(&mut app);
+    let image_version = seed_stale_clear_image(&mut app);
+    app.provider_session_id = Some("previous-provider-session".to_string());
+    app.input = "/new".to_string();
+
+    app.submit_input();
+
+    assert_ne!(app.session.id, previous_id);
+    assert!(
+        Session::load(&previous_id).is_ok(),
+        "previous session stays resumable"
+    );
+    assert!(app.provider_session_id.is_none());
+    assert!(app.input.is_empty());
+    assert_clear_usage_reset(&app);
+    assert_clear_swarm_plan_reset(&app);
+    assert_clear_image_reset(&app, image_version);
+    assert!(app.command_help("new").unwrap().contains("/resume"));
+}
+
+#[test]
+fn remote_slash_new_resets_session_state() {
+    let mut app = create_test_app();
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    remote.mark_history_loaded();
+    app.is_remote = true;
+    seed_stale_clear_usage(&mut app);
+    seed_stale_clear_swarm_plan(&mut app);
+    let image_version = seed_stale_clear_image(&mut app);
+    app.input = "/new".to_string();
+    app.cursor_pos = app.input.len();
+
+    rt.block_on(app.handle_remote_key(KeyCode::Enter, KeyModifiers::empty(), &mut remote))
+        .expect("remote /new should succeed");
+
+    assert!(app.input.is_empty());
+    assert_clear_usage_reset(&app);
+    assert_clear_swarm_plan_reset(&app);
+    assert_clear_image_reset(&app, image_version);
+}
+
+#[test]
+fn remote_slash_resume_opens_session_picker() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    remote.mark_history_loaded();
+    app.is_remote = true;
+    app.input = "/resume".to_string();
+    app.cursor_pos = app.input.len();
+
+    rt.block_on(app.handle_remote_key(KeyCode::Enter, KeyModifiers::empty(), &mut remote))
+        .expect("remote /resume should succeed");
+
+    assert!(app.session_picker_overlay.is_some());
+    assert_eq!(app.session_picker_mode, SessionPickerMode::Resume);
+    assert!(app.pending_session_picker_load.is_some());
+    assert!(app.input.is_empty());
+}
+
+#[test]
 fn local_clear_resets_provider_reported_context_usage() {
     let mut app = create_test_app();
     seed_stale_clear_usage(&mut app);

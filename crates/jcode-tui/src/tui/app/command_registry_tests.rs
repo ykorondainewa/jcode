@@ -26,6 +26,8 @@ fn known_aliases_are_registered() {
     let names: std::collections::HashSet<&str> =
         REGISTERED_COMMANDS.iter().map(|c| c.name).collect();
     for alias in [
+        "/new",
+        "/resume",
         "/keybindings",
         "/commit-and-push",
         "/resume-all",
